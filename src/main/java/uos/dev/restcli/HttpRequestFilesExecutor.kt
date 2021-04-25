@@ -1,17 +1,16 @@
 package uos.dev.restcli
 
 import com.github.ajalt.mordant.TermColors
+import jdk.vm.ci.amd64.AMD64.rsp
 import mu.KotlinLogging
 import uos.dev.restcli.executor.OkhttpRequestExecutor
 import uos.dev.restcli.jsbridge.JsClient
 import uos.dev.restcli.parser.Parser
 import uos.dev.restcli.parser.Request
 import uos.dev.restcli.parser.RequestEnvironmentInjector
-import uos.dev.restcli.report.AsciiArtTestReportGenerator
-import uos.dev.restcli.report.TestGroupReport
-import uos.dev.restcli.report.TestReportPrinter
-import uos.dev.restcli.report.TestReportStore
+import uos.dev.restcli.report.*
 import java.io.PrintWriter
+
 
 class HttpRequestFilesExecutor constructor(
     private val httpFilePaths: Array<String>,
@@ -59,12 +58,16 @@ class HttpRequestFilesExecutor constructor(
     }
 
     fun allTestsFinishedWithSuccess(): Boolean {
+
         return TestReportStore.testGroupReports
-            .flatMap { it.testReports }
-            .all { it.isPassed }
+            .stream()
+            .flatMap { report_group ->
+                report_group.testReports.stream()
+            }
+            .allMatch { report -> report.isPassed }
     }
 
-    private fun executeHttpRequestFile(
+        private fun executeHttpRequestFile(
         httpFilePath: String,
         environment: Map<String, String>,
         executor: OkhttpRequestExecutor
