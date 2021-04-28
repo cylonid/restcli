@@ -1,7 +1,6 @@
 package uos.dev.restcli
 
 import com.github.ajalt.mordant.TermColors
-import jdk.vm.ci.amd64.AMD64.rsp
 import mu.KotlinLogging
 import uos.dev.restcli.executor.OkhttpRequestExecutor
 import uos.dev.restcli.jsbridge.JsClient
@@ -27,6 +26,7 @@ class HttpRequestFilesExecutor constructor(
         RequestEnvironmentInjector()
     private val logger = KotlinLogging.logger {}
     private val t: TermColors = TermColors()
+    private val testGroupReports = mutableListOf<TestGroupReport>()
 
     override fun run() {
         if (httpFilePaths.isEmpty()) {
@@ -37,7 +37,7 @@ class HttpRequestFilesExecutor constructor(
             (environmentName?.let { EnvironmentLoader().load(environmentFilesDirectory, it) } ?: emptyMap())
                 .toMutableMap()
         val executor = OkhttpRequestExecutor(logLevel.toOkHttpLoggingLevel(), insecure, requestTimeout)
-        val testGroupReports = mutableListOf<TestGroupReport>()
+
         httpFilePaths.forEach { httpFilePath ->
             logger.info("\n__________________________________________________\n")
             logger.info(t.bold("HTTP REQUEST FILE: $httpFilePath"))
@@ -58,14 +58,11 @@ class HttpRequestFilesExecutor constructor(
     }
 
     fun allTestsFinishedWithSuccess(): Boolean {
-
-        return TestReportStore.testGroupReports
-            .stream()
-            .flatMap { report_group ->
-                report_group.testReports.stream()
-            }
-            .allMatch { report -> report.isPassed }
+        return testGroupReports
+            .flatMap { it.testReports }
+            .all { it.isPassed }
     }
+
 
         private fun executeHttpRequestFile(
         httpFilePath: String,
